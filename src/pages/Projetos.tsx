@@ -1,28 +1,24 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useProjects } from "../hooks/useProjects";
 
 export default function Projetos() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  // Usamos um estado separado para submeter a busca, evitando requisições a cada letra digitada
+  const [activeSearch, setActiveSearch] = useState("");
+  
+  // Consumimos o nosso Custom Hook passando o termo de busca ativo
+  const { data, isLoading, error } = useProjects(activeSearch);
 
-  // Lista simulada estruturada com base no modelo do Django REST
-  const projetosMock = [
-    {
-      id: 1,
-      titulo: "BlinkTech",
-      descricao_curta: "Projeto de óculos assistivos inovadores capazes de controlar cadeiras de rodas através de piscadelas de olhos estruturadas.",
-      tecnologias_array: ["Python", "C++", "Arduino", "Django"]
-    },
-    {
-      id: 2,
-      titulo: "Plataforma de Economia Solidária",
-      descricao_curta: "Solução de tecnologia social voltada para incubadoras tecnológicas de empreendimentos solidários em Niterói.",
-      tecnologias_array: ["React", "TypeScript", "Tailwind CSS", "Supabase"]
-    }
-  ];
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setActiveSearch(searchInput);
+  };
 
-  const filteredProjects = projetosMock.filter(projeto =>
-    projeto.titulo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleClear = () => {
+    setSearchInput("");
+    setActiveSearch("");
+  };
 
   return (
     <div className="container mx-auto py-12 mt-10 px-5 flex-grow">
@@ -32,65 +28,105 @@ export default function Projetos() {
 
       {/* Barra de Pesquisa */}
       <div className="max-w-2xl mx-auto mb-12">
-        <div className="flex gap-2 p-2 bg-neutral-800 border border-neutral-700 rounded-full shadow-inner">
+        <form onSubmit={handleSearch} className="flex gap-2 p-2 bg-neutral-800 border border-neutral-700 rounded-full shadow-inner">
           <input 
             type="search"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Buscar projeto..."
             className="w-full bg-transparent border-0 text-white placeholder-gray-500 focus:ring-0 focus:outline-none ps-4"
           />
-          <button className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 py-2 text-sm font-medium transition-colors">
+          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 py-2 text-sm font-medium transition-colors">
             Buscar
           </button>
-        </div>
+          {activeSearch && (
+            <button type="button" onClick={handleClear} className="bg-neutral-600 hover:bg-neutral-500 text-white rounded-full px-6 py-2 text-sm font-medium transition-colors">
+              Limpar
+            </button>
+          )}
+        </form>
       </div>
 
-      {/* Grid de Cartões de Projetos */}
+      {/* Gerenciamento de Estados de UI */}
       <div className="flex flex-col gap-6 max-w-4xl mx-auto">
-        {filteredProjects.length > 0 ? (
-          filteredProjects.map((projeto) => (
-            <div 
-              key={projeto.id} 
-              className="bg-neutral-800 border border-neutral-700/50 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow md:flex items-center"
-            >
-              {/* Thumbnail mockada */}
-              <div className="md:w-2/5 bg-neutral-950 aspect-video md:aspect-auto md:h-48 flex items-center justify-center text-gray-600 border-b md:border-b-0 md:border-r border-neutral-700/50">
-                <i className="bi bi-code-slash text-5xl text-neutral-700"></i>
-              </div>
+        {isLoading && (
+          <div className="text-center py-10">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="text-gray-400 mt-4 font-mono">Carregando dados da API...</p>
+          </div>
+        )}
 
-              {/* Informações do Projeto */}
-              <div className="p-6 md:w-3/5">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-bold">{projeto.titulo}</h3>
-                  <i className="bi bi-github text-gray-400 text-lg"></i>
+        {error && (
+          <div className="bg-red-900/50 border border-red-500 text-red-200 p-4 rounded-xl text-center">
+            {error}
+          </div>
+        )}
+
+        {/* Renderização Condicional dos Dados Reais */}
+        {!isLoading && !error && data?.results && (
+          data.results.length > 0 ? (
+            data.results.map((projeto) => (
+              <div 
+                key={projeto.id} 
+                className="bg-neutral-800 border border-neutral-700/50 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow md:flex items-center"
+              >
+                {/* Imagem Real do Backend */}
+                <div className="md:w-2/5 aspect-video md:aspect-auto md:h-48 overflow-hidden bg-neutral-900">
+                  {projeto.thumb_projeto ? (
+                    <img 
+                      // Como o Django retorna o caminho relativo do media, precisamos concatenar com a base URL se não estiver configurado absolute
+                      src={projeto.thumb_projeto.startsWith('http') ? projeto.thumb_projeto : `http://localhost:8000${projeto.thumb_projeto}`} 
+                      alt={projeto.titulo} 
+                      className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-neutral-600">
+                      <i className="bi bi-image text-4xl"></i>
+                    </div>
+                  )}
                 </div>
-                <p className="text-gray-400 text-sm mb-4 leading-relaxed">
-                  {projeto.descricao_curta}
-                </p>
-                <div className="mb-4">
-                  <span className="text-xs font-mono text-gray-500 block mb-1">TECNOLOGIAS:</span>
-                  <div className="flex flex-wrap gap-2">
-                    {projeto.tecnologias_array.map(tech => (
-                      <span key={tech} className="text-xs text-blue-400 font-mono">
-                        {tech}
-                      </span>
-                    ))}
+
+                {/* Dados Reais */}
+                <div className="p-6 md:w-3/5 flex flex-col justify-between h-full">
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-xl font-bold">{projeto.titulo}</h3>
+                      {projeto.url_git && (
+                        <a href={projeto.url_git} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                          <i className="bi bi-github text-xl"></i>
+                        </a>
+                      )}
+                    </div>
+                    <p className="text-gray-400 text-sm mb-4 leading-relaxed line-clamp-2">
+                      {projeto.descricao_curta}
+                    </p>
+                    <div className="mb-4">
+                      <span className="text-xs font-mono text-gray-500 block mb-1">TECNOLOGIAS:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {projeto.tecnologias_array.map((tech, index) => (
+                          <span key={index} className="text-xs text-blue-400 font-mono">
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <Link 
+                      to={`/projetos/${projeto.id}`} 
+                      className="inline-block bg-neutral-900 border border-neutral-700 hover:border-blue-500 text-gray-300 hover:text-white px-4 py-2 rounded text-xs font-mono transition-colors"
+                    >
+                      Detalhes &gt;_
+                    </Link>
                   </div>
                 </div>
-                <Link 
-                  to={`/projetos/${projeto.id}`} 
-                  className="inline-block bg-neutral-900 border border-neutral-700 hover:border-blue-500 text-gray-300 hover:text-white px-4 py-2 rounded text-xs font-mono transition-colors"
-                >
-                  Detalhes &gt;_
-                </Link>
               </div>
+            ))
+          ) : (
+            <div className="text-center py-10 bg-neutral-800 rounded-xl border border-dashed border-neutral-700 text-gray-400">
+              Nenhum projeto encontrado.
             </div>
-          ))
-        ) : (
-          <div className="text-center py-10 bg-neutral-800 rounded-xl border border-dashed border-neutral-700 text-gray-400">
-            Nenhum projeto encontrado para o termo especificado.
-          </div>
+          )
         )}
       </div>
     </div>
