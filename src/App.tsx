@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Sobre from "./pages/Sobre";
 import Projetos from "./pages/Projetos";
 import Contato from "./pages/Contato";
+import ProjetoDetalhes from "./components/projetos/ProjetoDetalhes";
 
 export default function App() {
   return (
@@ -14,7 +15,7 @@ export default function App() {
           <Route path="sobre" element={<Sobre />} />
           <Route path="projetos" element={<Projetos />} />
           <Route path="contato" element={<Contato />} />
-          <Route path="projetos/:id" element={<div className="p-10 text-center text-gray-400">Ecrã de Detalhes (Integrado na Fase 4)</div>} />
+          <Route path="projetos/:id" element={<ProjetoDetalhes/>} />
         </Route>
       </Routes>
     </BrowserRouter>
