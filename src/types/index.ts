@@ -1,7 +1,10 @@
 export interface Profile {
   id: number;
   nome: string;
-  foto_perfil: string | null;
+  foto_perfil: string;
+  profissao: string;
+  foco: string;
+  stack_array: string[];
   titulo_profissional: string;
   bio_curta: string;
   bio_longa: string;
